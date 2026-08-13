@@ -17,9 +17,10 @@ import { categoriesRoutes } from './modules/categories/categories.routes';
 import { productsRoutes } from './modules/products/products.routes';
 import { cartRoutes } from './modules/cart/cart.routes';
 import { ordersRoutes } from './modules/orders/orders.routes';
+import { env } from './config/env';
 
 export async function buildApp() {
-  const app = Fastify({ logger: true }).withTypeProvider<ZodTypeProvider>();
+  const app = Fastify({ logger: env.NODE_ENV !== 'test' }).withTypeProvider<ZodTypeProvider>();
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);

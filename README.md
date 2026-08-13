@@ -33,6 +33,35 @@ Users created by the seed:
 - `npm run build` / `npm start` — build and run in production
 - `npm run typecheck` — type checking
 - `npm run prisma:studio` — opens Prisma Studio
+- `npm test` — runs the automated API test suite (see below)
+
+## Automated tests
+
+The `tests/` folder holds two API test suites that share the same route paths (`tests/selectors/endpoints.ts`) and payload builders (`tests/fixtures/`), so both suites test the exact same scenarios through different transports:
+
+- **Vitest suite** (`tests/*.spec.ts`, POM in `tests/api/pom/`) — drives the app in-process via Fastify's `inject()`, no HTTP port needed. Fastest option, good for local development.
+- **Playwright suite** (`tests/playwright/`, POM in `tests/playwright/pom/`) — drives a real running instance of the API over HTTP (Playwright's `webServer` boots it automatically), closer to how the API is actually consumed.
+
+Both suites share the same structure:
+
+- **Page Object Model** — one class per resource (`AuthApi`, `ProductsApi`, `CartApi`, `OrderApi`, ...), each wrapping the HTTP calls for that resource, extending a shared `BaseApi`.
+- **Reusable selector dictionary** (`tests/selectors/endpoints.ts`) — every route path lives in one place and is consumed by all Page Objects in both suites.
+- **Fixtures** (`tests/fixtures/`) — builders for valid request payloads (users, categories, products) so each test can override just the field it cares about.
+- **Hooks** (`beforeAll`/`beforeEach`/`afterAll`) — shared setup (fresh customer/product per test) instead of repeating it in every test.
+- **`describe()` blocks** grouping tests by resource and then by endpoint.
+- Both **positive and negative scenarios** per endpoint, always asserting the HTTP status code **and** the message returned by the API.
+
+Both suites run against a real, isolated Postgres database — not mocks.
+
+To run them:
+
+```bash
+docker compose up -d postgres-test   # starts the isolated test database (first time only)
+npm test                             # Vitest: applies migrations + seed, then runs the suite
+npm run test:playwright              # Playwright: applies migrations + seed, boots the API, then runs the suite
+```
+
+Both scripts are safe to re-run — migrations and the seed are idempotent. Use `npm run test:watch` during development on the Vitest suite.
 
 ## Endpoints overview
 
